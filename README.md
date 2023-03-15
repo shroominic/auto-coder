@@ -2,3 +2,5 @@
 
 I like this https://github.com/zurawiki/gptcommit
 lets do it in rust
+
+but also python is very welcome
