@@ -1,6 +1,6 @@
 import argparse
 
-from src.models import Issue
+from autocoder.models import Issue
     
 
 # Set up argument parser
