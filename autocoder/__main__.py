@@ -1,5 +1,4 @@
 import argparse
-
 from autocoder.models import Issue
     
 
@@ -8,10 +7,8 @@ parser = argparse.ArgumentParser(description='Process a GitHub issue link')
 parser.add_argument('issue', help='Link to the GitHub issue')
 
 # Parse the command line arguments
-args = parser.parse_args()
+issue_url = parser.parse_args().issue
 
-issue: Issue = args.issue
-
-print(f'Processing GitHub issue: {issue}')
+issue = Issue(issue_url)
 
 issue.solve()
