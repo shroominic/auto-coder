@@ -1,5 +1,6 @@
 import requests
 from .issue import Issue
+from .codebase import Codebase
 
 
 class Repository:
@@ -7,6 +8,7 @@ class Repository:
         self.repo_url = repo_url
         self.owner, self.repo = self._extract_repo_info()
         self.repo_info = self._fetch_repo_info()
+        self.codebase = self._init_codebase()
 
     def get_issue(self, issue_number) -> Issue:
         return Issue(self, issue_number)
@@ -21,7 +23,10 @@ class Repository:
         repo_api_url = f"https://api.github.com/repos/{self.owner}/{self.repo}"
         repo_response = requests.get(repo_api_url)
         return repo_response.json()
-
+    
+    def _init_codebase(self):
+        return Codebase(self)
+    
     @property
     def name(self) -> str:
         return self.repo_info['name']
