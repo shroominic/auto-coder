@@ -1,5 +1,5 @@
 import argparse
-from autocoder.models import Issue, Repository
+from autocoder.models import Repository
     
 
 # Set up argument parser
