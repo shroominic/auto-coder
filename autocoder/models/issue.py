@@ -1,4 +1,5 @@
 import requests
+from utils import ChatGPTSession
 
 
 class Issue:
@@ -9,7 +10,36 @@ class Issue:
 
     def solve(self):
         """ Solve the issue by using GPT4 and start a pull request """
-        print("Solving issue: ", self)
+        session = ChatGPTSession()
+        session.history.append({
+            "role": "system",
+            "content": f"""
+            The following is a conversation about solving issue {self.issue_number} on {self.repository}.
+            Title: {self.title}
+            Description: {self.body}
+            Project paths: {self.repository.codebase.tree}
+            """
+            }) 
+        session.history.append({
+            "role": "user",
+            "content": f"""
+            What files are relevant to this issue? 
+            Create a list "read" and a list "write" and put all files as path in there to solve the issue.
+            Format it like this:
+            read = ["path/to/file1.py", "path/to/file2.py"]
+            write = ["path/to/file3.py"]
+            Reply only with a code block containing the lists.
+            """
+            })
+        # TODO: Check if answer is valid and regex match lists into variables
+        
+        # TODO: go over all read files and summarize them
+        
+        # TODO: go over all write files and do changes
+        
+        # TODO: test the code and repeat until it works
+        
+        # TODO: create a pull request
         
     def _fetch_issue_info(self):
         issue_api_url = f"https://api.github.com/repos/{self.repository.owner}/{self.repository.repo}/issues/{self.issue_number}"
