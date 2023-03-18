@@ -9,14 +9,16 @@ class Codebase:
     def __init__(self, repository):
         self.repository = repository
         self.path = self._clone_repository()
+        self.ignore = [".git"]
 
     @property
     def tree(self) -> str:
         tree = []
         for folder, _, files in os.walk(self.path):
-            folder_relative = os.path.relpath(folder, self.path)
-            for file in files:
-                tree.append(os.path.join(folder_relative, file))
+            if all([ignore not in folder for ignore in self.ignore]):
+                folder_relative = os.path.relpath(folder, self.path)
+                for file in files:
+                    tree.append(os.path.join(folder_relative, file))
         return "\n".join(tree)
     
     def show_file(self, file_path) -> str:
