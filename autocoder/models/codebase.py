@@ -28,6 +28,9 @@ class Codebase:
     def _clone_repository(self):
         repo_path = self.PATH + self.repository.name
         if not os.path.exists(repo_path):
+            # Pass the access token as an environment variable for the git clone command
+            os.environ['GIT_ASKPASS'] = f'echo {self.repository.access_token}'
+            os.environ['GIT_TERMINAL_PROMPT'] = '0'
             Repo.clone_from(self.repository.repo_url, repo_path)
         return repo_path
 

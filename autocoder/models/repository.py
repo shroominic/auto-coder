@@ -4,9 +4,10 @@ from .codebase import Codebase
 
 
 class Repository:
-    def __init__(self, repo_url):
+    def __init__(self, repo_url, access_token=None):  # Add an access_token parameter
         self.repo_url = repo_url
         self.owner, self.repo = self._extract_repo_info()
+        self.access_token = access_token  # Store the access_token
         self.repo_info = self._fetch_repo_info()
         self.codebase = self._init_codebase()
 
@@ -21,7 +22,10 @@ class Repository:
 
     def _fetch_repo_info(self):
         repo_api_url = f"https://api.github.com/repos/{self.owner}/{self.repo}"
-        repo_response = requests.get(repo_api_url)
+        headers = {}
+        if self.access_token:  # Add the access token to the headers if provided
+            headers["Authorization"] = f"Bearer {self.access_token}"
+        repo_response = requests.get(repo_api_url, headers=headers)  # Pass headers to the request
         return repo_response.json()
     
     def _init_codebase(self):
