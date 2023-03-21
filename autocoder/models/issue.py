@@ -1,5 +1,6 @@
 import requests
-from utils import ChatGPTSession
+from promptkit import ChatGPTSession
+import re
 
 
 class Issue:
@@ -19,14 +20,42 @@ class Issue:
             Description: {self.body}
             Project paths: {self.repository.codebase.tree}
             """
-        ) 
+        )
         session.add_user(
             f"""
-            What files are relevant to this issue? 
+            What files are relevant to this issue?
+            
+            Files:
+            {self.repository.codebase.tree}
+            
+            Create a list "relevant_files" and 
+            put all files as path in there for solving the issue.
+            
+            Reply with a codeblock like this:
+            ```python
+            read = [
+                "./path/to/file1.py",
+                "./path/to/file2.py"
+            ]
+            ```
+            """
+        )
+        response = session.get_response().get_codeblock()
+        file_paths = re.findall(r"\"(.*?)\"", response)
+        print("\n".join(file_paths))
+        
+        session.add_user(
+            f"""
+            What files are relevant to this issue?
             Create a list "read" and a list "write" and put all files as path in there to solve the issue.
+            
             Format it like this:
             read = ["path/to/file1.py", "path/to/file2.py"]
             write = ["path/to/file3.py"]
+            
+            Files:
+            {self.repository.codebase.tree}
+            
             Reply only with a code block containing the lists.
             """
         )
@@ -42,7 +71,10 @@ class Issue:
 
     def _fetch_issue_info(self):
         issue_api_url = f"https://api.github.com/repos/{self.repository.owner}/{self.repository.repo}/issues/{self.issue_number}"
-        issue_response = requests.get(issue_api_url)
+        headers = {}
+        if self.repository.access_token:  # Add the access token to the headers if provided
+            headers["Authorization"] = f"Bearer {self.repository.access_token}"
+        issue_response = requests.get(issue_api_url, headers=headers)  # Pass headers to the request
         return issue_response.json()
 
     @property
