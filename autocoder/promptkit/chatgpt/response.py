@@ -14,6 +14,10 @@ class GPTResponse:
             self.content, re.DOTALL
         ).group(2)
 
+    def get_bool(self) -> bool:
+        """ Extract boolean from response """
+        return self.content.lower().startswith("y")
+    
     def regenerate(self):
         """ Regenerate the response """
         self.response = self.session.generate(history=self.session.history[:-1])
