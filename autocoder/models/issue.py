@@ -1,5 +1,6 @@
 import requests
 from promptkit import ChatGPTSession
+from promptkit.tools import summarize
 import re
 
 
@@ -12,58 +13,91 @@ class Issue:
 
     def solve(self):
         """ Solve the issue by using GPT4 and start a pull request """
-        session = ChatGPTSession()
+        session = ChatGPTSession(model="gpt-3.5-turbo")
         session.add_system(
             f"""
             The following is a conversation about solving issue {self.issue_number} on {self.repository}.
-            Title: {self.title}
-            Description: {self.body}
-            Project paths: {self.repository.codebase.tree}
+            Title:
+            {self.title}
+            
+            Description:
+            {self.body}
+            
+            Your task is to solve the issue by using the codebase of the repository.
             """
         )
         session.add_user(
             f"""
-            What files are relevant to this issue?
+            First write a detailed instruction on how to solve the issue.
+            Explain what technologies are used and what files are relevant.
             
-            Files:
+            Codebase:
             {self.repository.codebase.tree}
             
-            Create a list "relevant_files" and 
-            put all files as path in there for solving the issue.
+            Create a list called "relevant_files" and 
+            write down all files as path that are relevant for solving the issue.
             
             Reply with a codeblock like this:
             ```python
-            read = [
-                "./path/to/file1.py",
-                "./path/to/file2.py"
+            relevant_files = [
+                "path/to/file1.py",  # do not start with ./ or /
+                "path/to/file2.py"
+                ...
             ]
             ```
             """
         )
         response = session.get_response().get_codeblock()
-        file_paths = re.findall(r"\"(.*?)\"", response)
-        print("\n".join(file_paths))
+        paths = re.findall(r"\"(.*?)\"", response)
         
-        session.add_user(
-            f"""
-            What files are relevant to this issue?
-            Create a list "read" and a list "write" and put all files as path in there to solve the issue.
-            
-            Format it like this:
-            read = ["path/to/file1.py", "path/to/file2.py"]
-            write = ["path/to/file3.py"]
-            
-            Files:
-            {self.repository.codebase.tree}
-            
-            Reply only with a code block containing the lists.
-            """
-        )
-        # TODO: Check if answer is valid and regex match lists into variables
-        
-        # TODO: go over all read files and summarize them
-        
-        # TODO: go over all write files and do changes
+        for path in paths:
+            file_path = f"autocoder/.codebases/{self.repository.repo}/{path}"
+            print(file_path)
+            with open(file_path, "r") as file:
+                file_content = file.read()
+                summary = summarize(f"# {file_path}\nfile_content")
+                print(summary)
+                session.add_user(
+                    f"""
+                    Here is a summary of the file {file_path}:
+                    {summary}
+                    """
+                )
+                session.add_user(
+                    f"""
+                    Is this file relevant for solving the issue?
+                    File path: {file_path}
+                    Issue title: {self.title}
+                    Issue description: {self.body}
+                    Reply only with "Yes" or "No". 
+                    """
+                )
+                is_yes = session.get_response().get_bool()
+                print(is_yes)
+                if is_yes:
+                    session.add_user(
+                        f"""
+                        First write a detailed instruction on how to change the file {file_path}.
+                        File content:
+                        {file_content}
+                        
+                        Create a list called "changes",
+                        write down all changes as a dictionary and 
+                        reply with a codeblock like this:
+                        """
+                        """
+                        ```python
+                        changes = [
+                            {"line": 1, "old": "old code", "new": "new code"},
+                            {"line": 2, "old": "old code", "new": "new code"},
+                            ...
+                        ]
+                        ```
+                        """)
+                    response = session.get_response().get_codeblock()
+                    changes = re.findall(r"\"(.*?)\"", response)
+                    for change in changes:
+                        print(change)
         
         # TODO: test the code and repeat until it works
         
