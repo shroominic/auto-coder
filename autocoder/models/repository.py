@@ -39,6 +39,10 @@ class Repository:
     def description(self) -> str:
         return self.repo_info['description']
     
+    @property
+    def keywords(self) -> list:
+        return self.repo_info['topics']
+    
     def __repr__(self) -> str:
         return f"Repository({self.name})"
     
