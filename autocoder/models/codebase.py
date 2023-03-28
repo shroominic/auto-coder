@@ -1,5 +1,6 @@
 from git import Repo
 import os
+import re
 
 
 class Codebase:
@@ -21,9 +22,25 @@ class Codebase:
                     tree.append(os.path.join(folder_relative, file))
         return "\n".join(tree)
     
-    def show_file(self, file_path) -> str:
-        with open(os.path.join(self.path, file_path), "r") as f:
+    def show_file(self, relative_path) -> str:
+        with open(os.path.join(self.path, relative_path), "r") as f:
             return f.read()
+        
+    def file_exists(self, relative_path) -> bool:
+        try:
+            return os.path.exists(os.path.join(self.path, relative_path))
+        except Exception as e:
+            print(e)
+            return False
+    
+    def validate_file_paths(self, file_paths) -> bool:
+        return all([
+                re.search(r".*\..*", path) is not None
+                for path in file_paths
+            ]) and all([
+                self.file_exists(path.strip("'"))
+                for path in file_paths
+            ])
     
     def _clone_repository(self):
         repo_path = self.PATH + self.repository.name
