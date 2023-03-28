@@ -1,7 +1,11 @@
-import requests
-from promptkit import ChatGPTSession
-from promptkit.tools import summarize
 import re
+import requests
+import promptkit
+
+from models.templates import *
+from langchain.chat_models import ChatOpenAI
+from langchain.chains import LLMChain
+from .codebase import Codebase
 
 
 class Issue:
@@ -12,96 +16,79 @@ class Issue:
         self.issue_info = self._fetch_issue_info()
 
     def solve(self):
-        """ Solve the issue by using GPT4 and start a pull request """
-        session = ChatGPTSession(model="gpt-3.5-turbo")
-        session.add_system(
-            f"""
-            The following is a conversation about solving issue {self.issue_number} on {self.repository}.
-            Title:
-            {self.title}
-            
-            Description:
-            {self.body}
-            
-            Your task is to solve the issue by using the codebase of the repository.
-            """
-        )
-        session.add_user(
-            f"""
-            First write a detailed instruction on how to solve the issue.
-            Explain what technologies are used and what files are relevant.
-            
-            Codebase:
-            {self.repository.codebase.tree}
-            
-            Create a list called "relevant_files" and 
-            write down all files as path that are relevant for solving the issue.
-            
-            Reply with a codeblock like this:
-            ```python
-            relevant_files = [
-                "path/to/file1.py",  # do not start with ./ or /
-                "path/to/file2.py"
-                ...
-            ]
-            ```
-            """
-        )
-        response = session.get_response().get_codeblock()
-        paths = re.findall(r"\"(.*?)\"", response)
+        """ Solve the issue by using langchain and start a pull request """
+        chatgpt = ChatOpenAI(model="gpt-3.5-turbo", verbose=True)
+        info_dict = {
+            "repo_name": self.repository.name, 
+            "repo_keywords": self.repository.keywords, 
+            "repo_description": self.repository.description, 
+            "issue_title": self.title, 
+            "issue_number": self.issue_number,
+            "issue_description": self.body, 
+            "code_tree": self.repository.codebase.tree
+            }
         
-        for path in paths:
-            file_path = f"autocoder/.codebases/{self.repository.repo}/{path}"
-            print(file_path)
-            with open(file_path, "r") as file:
-                file_content = file.read()
-                summary = summarize(f"# {file_path}\nfile_content")
-                print(summary)
-                session.add_user(
-                    f"""
-                    Here is a summary of the file {file_path}:
-                    {summary}
-                    """
-                )
-                session.add_user(
-                    f"""
-                    Is this file relevant for solving the issue?
-                    File path: {file_path}
-                    Issue title: {self.title}
-                    Issue description: {self.body}
-                    Reply only with "Yes" or "No". 
-                    """
-                )
-                is_yes = session.get_response().get_bool()
-                print(is_yes)
-                if is_yes:
-                    session.add_user(
-                        f"""
-                        First write a detailed instruction on how to change the file {file_path}.
-                        File content:
-                        {file_content}
-                        
-                        Create a list called "changes",
-                        write down all changes as a dictionary and 
-                        reply with a codeblock like this:
-                        """
-                        """
-                        ```python
-                        changes = [
-                            {"line": 1, "old": "old code", "new": "new code"},
-                            {"line": 2, "old": "old code", "new": "new code"},
-                            ...
-                        ]
-                        ```
-                        """)
-                    response = session.get_response().get_codeblock()
-                    changes = re.findall(r"\"(.*?)\"", response)
-                    for change in changes:
-                        print(change)
+        print("Starting issue solving process")
+        
+        files_chain = LLMChain(llm=chatgpt, prompt=get_important_files, verbose=True)
+        files_ok = False
+        while not files_ok:
+            relevant_files_response = files_chain.run(info_dict)
+            if relevant_files_response:
+                print(relevant_files_response)
+                relevant_file_paths = re.findall(r"'.*?'", relevant_files_response)
+                files_ok = self.codebase.validate_file_paths(relevant_file_paths)
+                print("FilesOK:", files_ok)
+            else: print("No files found try again", relevant_files_response)
+            
+        print("Relevant Files:", relevant_file_paths)
+        
+        relevant_files_dict = {}
+        for file in relevant_file_paths:
+                file_content = self.codebase.show_file(file.strip("'"))
+                relevant_files_dict[file] = file_content
+        
+        info_dict["relevant_files"] = str(relevant_files_dict)
+        
+        print("Generate repo summary:")
+        repo_chain = LLMChain(llm=chatgpt, prompt=get_repo_summary, verbose=True)    
+        info_dict["repo_summary"] = repo_chain.run(info_dict)
+        
+        print("Generate issue summary:")
+        issue_chain = LLMChain(llm=chatgpt, prompt=get_issue_summary, verbose=True)
+        info_dict["issue_summary"] = issue_chain.run(info_dict)
+        
+        what_files_to_change = LLMChain(llm=chatgpt, prompt=get_files_to_change, verbose=True)
+        files_ok = False
+        while not files_ok:
+            files_to_change = what_files_to_change.run(info_dict)
+            print(files_to_change)
+            if files_to_change == []: continue
+            change_file_paths = re.findall(r"'.*?'", files_to_change)
+            files_ok = self.codebase.validate_file_paths(change_file_paths)
+        
+        print(change_file_paths)
+        
+        change_files_dict = {}
+        for file in change_file_paths:
+            try:
+                file_content = self.codebase.show_file(file.strip("'"))
+                info_dict["file_content"] = file_content
+                new_file_content = LLMChain(llm=chatgpt, prompt=change_file, verbose=True).run(info_dict)
+                print(new_file_content)
+                new_file_content2 = LLMChain(llm=chatgpt, prompt=change_file2, verbose=True).run(info_dict)
+                print(new_file_content2)
+                change_files_dict[file] = new_file_content
+            except FileNotFoundError:
+                print(f"File {file} not found")
+        for file, content in change_files_dict.items():
+            print(file)
+            print(content)
         
         # TODO: test the code and repeat until it works
         
         # TODO: create a pull request
+                
 
     def _fetch_issue_info(self):
         issue_api_url = f"https://api.github.com/repos/{self.repository.owner}/{self.repository.repo}/issues/{self.issue_number}"
@@ -134,6 +121,10 @@ class Issue:
     @property
     def body(self) -> str:
         return self.issue_info['body']
+
+    @property
+    def codebase(self) -> Codebase:
+        return self.repository.codebase
     
     def __repr__(self) -> str:
         return f"Issue({self.repository}, {self.issue_number})"
