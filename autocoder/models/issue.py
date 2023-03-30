@@ -1,11 +1,10 @@
 import re
 import requests
-import promptkit
-
-from models.templates import *
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import LLMChain
+
 from .codebase import Codebase
+from .templates import *
 
 
 class Issue:
@@ -14,10 +13,11 @@ class Issue:
         self.repository = repository
         self.issue_number = issue_number
         self.issue_info = self._fetch_issue_info()
-
+        self.branch_name = self._create_branch()
+    
     def solve(self):
         """ Solve the issue by using langchain and start a pull request """
-        chatgpt = ChatOpenAI(model="gpt-3.5-turbo", verbose=True)
+        chatgpt = ChatOpenAI(model="gpt-4", verbose=True)
         info_dict = {
             "repo_name": self.repository.name, 
             "repo_keywords": self.repository.keywords, 
@@ -32,14 +32,17 @@ class Issue:
         
         files_chain = LLMChain(llm=chatgpt, prompt=get_important_files, verbose=True)
         files_ok = False
+        tries = 0
         while not files_ok:
             relevant_files_response = files_chain.run(info_dict)
             if relevant_files_response:
                 print(relevant_files_response)
                 relevant_file_paths = re.findall(r"'.*?'", relevant_files_response)
                 files_ok = self.codebase.validate_file_paths(relevant_file_paths)
-                print("FilesOK:", files_ok)
-            else: print("No files found try again", relevant_files_response)
+            else: 
+                print("No files found try again", relevant_files_response)
+                tries += 1
+            if tries > 5: raise Exception("No files found")
             
         print("Relevant Files:", relevant_file_paths)
         
@@ -60,14 +63,25 @@ class Issue:
         
         what_files_to_change = LLMChain(llm=chatgpt, prompt=get_files_to_change, verbose=True)
         files_ok = False
+        tries = 0
         while not files_ok:
-            files_to_change = what_files_to_change.run(info_dict)
+            changes = what_files_to_change.run(info_dict)
+            files_to_change = re.match(r"files_to_change = \[(.*?)\]", changes)
+            new_files = re.match(r"new_files = \[(.*?)\]", changes)
             print(files_to_change)
-            if files_to_change == []: continue
-            change_file_paths = re.findall(r"'.*?'", files_to_change)
-            files_ok = self.codebase.validate_file_paths(change_file_paths)
+            print(new_files)
+            if new_files:
+                new_file_paths = re.findall(r"'.*?'", new_files.group(1))
+                change_file_paths = re.findall(r"'.*?'", files_to_change.group(1))
+            elif files_to_change:
+                change_file_paths = re.findall(r"'.*?'", files_to_change.group(1))
+                files_ok = self.codebase.validate_file_paths(change_file_paths)
+                print("No files found try again", files_to_change)
+                tries += 1
+            if tries > 5: raise Exception("No files found")
         
-        print(change_file_paths)
+        print("Files to change:\n", change_file_paths, "\n")
+        print("New Files:\n", new_file_paths, "\n")
         
         change_files_dict = {}
         for file in change_file_paths:
@@ -88,7 +102,6 @@ class Issue:
         # TODO: test the code and repeat until it works
         
         # TODO: create a pull request
-                
 
     def _fetch_issue_info(self):
         issue_api_url = f"https://api.github.com/repos/{self.repository.owner}/{self.repository.repo}/issues/{self.issue_number}"
@@ -98,6 +111,12 @@ class Issue:
         issue_response = requests.get(issue_api_url, headers=headers)  # Pass headers to the request
         return issue_response.json()
 
+    def _create_branch(self):
+        """ Create a branch for the issue """
+        branch_name = f"issue-{self.issue_number}"
+        self.repository.create_branch(branch_name)
+        return branch_name
+    
     @property
     def title(self) -> str:
         return self.issue_info['title']

@@ -27,6 +27,7 @@ class Codebase:
             return f.read()
         
     def file_exists(self, relative_path) -> bool:
+        print(os.path.join(self.path, relative_path))
         try:
             return os.path.exists(os.path.join(self.path, relative_path))
         except Exception as e:
@@ -41,6 +42,25 @@ class Codebase:
                 self.file_exists(path.strip("'"))
                 for path in file_paths
             ])
+            
+    def create_file(self, relative_path, content) -> None:
+        with open(os.path.join(self.path, relative_path), "w") as f:
+            f.write(content)
+            
+    def change_file(self, relative_path, content) -> None:
+        with open(os.path.join(self.path, relative_path), "w") as f:
+            f.write(content)
+    
+    def delete_file(self, relative_path) -> None:
+        os.remove(os.path.join(self.path, relative_path))
+        
+    def commit_changes(self, message) -> None:
+        repo = Repo(self.path)
+        
+        repo.git.add(A=True)
+        repo.index.commit(message)
+        origin = repo.remote(name='origin')
+        origin.push()
     
     def _clone_repository(self):
         repo_path = self.PATH + self.repository.name

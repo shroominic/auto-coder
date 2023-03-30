@@ -1,6 +1,7 @@
 import requests
 from .issue import Issue
 from .codebase import Codebase
+from git import Repo
 
 
 class Repository:
@@ -13,6 +14,11 @@ class Repository:
 
     def get_issue(self, issue_number) -> Issue:
         return Issue(self, issue_number)
+    
+    def create_branch(self, branch_name):
+        repo = Repo(self.codebase.path)
+        repo.git.checkout('-b', branch_name)
+        repo.git.push('--set-upstream', 'origin', branch_name)
     
     def _extract_repo_info(self):
         parts = self.repo_url.split("/")
