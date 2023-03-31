@@ -57,6 +57,25 @@ what_files_to_change = HumanMessagePromptTemplate.from_template(
     "]\n"
 )
 
+prepare_changes = HumanMessagePromptTemplate.from_template(
+    template=
+    "Repository description: {repo_summary}\n"
+    "Issue description: {issue_summary}\n"
+    "What files need to be changed to solve the issue?\n"
+    "What new files need to be created?\n"
+    "Reply like this:\n"
+    "files_to_change = [\n"
+    "    'path/to/file1.txt',  # do not start with ./ or /\n"
+    "    'path/to/file2.js',\n"
+    "    ...\n"
+    "]\n"
+    "new_files = [\n"
+    "    'path/to/new_file1.py',\n"
+    "    ...\n"
+    "]\n"
+    "# write paths using 'single quotes'\n"
+)
+
 change_file = HumanMessagePromptTemplate.from_template(
     template=
     "Repository description: {repo_summary}\n"
@@ -97,4 +116,4 @@ changes = [
 get_important_files = ChatPromptTemplate.from_messages([coding_system_prompt, important_files])
 get_repo_summary = ChatPromptTemplate.from_messages([coding_system_prompt, repo_summary])
 get_issue_summary = ChatPromptTemplate.from_messages([coding_system_prompt, issue_summary])
-get_files_to_change = ChatPromptTemplate.from_messages([coding_system_prompt, what_files_to_change])
+get_files_to_change = ChatPromptTemplate.from_messages([coding_system_prompt, prepare_changes])
