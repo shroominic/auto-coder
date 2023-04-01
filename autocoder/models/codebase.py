@@ -44,8 +44,13 @@ class Codebase:
             ])
             
     def create_file(self, relative_path, content) -> None:
-        with open(os.path.join(self.path, relative_path), "w") as f:
+        file_path = os.path.join(self.path, relative_path)
+        with open(file_path, "w") as f:
             f.write(content)
+        
+        # format file with black
+        os.system(f"black {file_path}")     
+            
             
     def change_file(self, relative_path: str, changes: list) -> None:
         """ Apply changes to file 
@@ -72,6 +77,9 @@ class Codebase:
 
         with open(file_path, 'w') as f:
             f.writelines(lines)
+        
+        # format file with black
+        os.system(f"black {file_path}")
     
     def delete_file(self, relative_path) -> None:
         os.remove(os.path.join(self.path, relative_path))
