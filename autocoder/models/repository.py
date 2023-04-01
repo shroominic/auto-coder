@@ -1,7 +1,7 @@
 import requests
 from .issue import Issue
 from .codebase import Codebase
-from git import Repo
+from git import Repo, GitCommandError
 
 
 class Repository:
@@ -17,8 +17,15 @@ class Repository:
     
     def create_branch(self, branch_name):
         repo = Repo(self.codebase.path)
-        repo.git.checkout('-b', branch_name)
-        repo.git.push('--set-upstream', 'origin', branch_name)
+        
+        try:
+            repo.git.checkout('-b', branch_name)
+            repo.git.push('--set-upstream', 'origin', branch_name)
+        except GitCommandError as e:
+            if "branch named" in str(e) and "already exists" in str(e):
+                print(f"A branch named '{branch_name}' already exists. Switching to the existing branch.")
+                repo.git.checkout(branch_name)
+            else: raise e
     
     def _extract_repo_info(self):
         parts = self.repo_url.split("/")
