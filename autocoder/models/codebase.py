@@ -56,10 +56,8 @@ class Codebase:
         """ Apply changes to file 
         example_changes = [
             # (line_number, action, "new code")
-            (0, 'add', "import newexample"),
+            (0, 'add', "import example"),
             (4, 'overwrite', "def foo():"),
-            (5, 'add', "    print('hello world')"),
-            (6, 'delete', "    print('bar')"),
             ...
         ]
         """
@@ -69,7 +67,7 @@ class Codebase:
 
         for line_number, action, new_code in changes:
             if action == 'add':
-                lines.insert(line_number, '\n' + new_code + '\n')
+                lines.insert(line_number, '\n' + new_code)
             elif action == 'overwrite':
                 lines[line_number] = new_code + '\n'
             elif action == 'delete':
