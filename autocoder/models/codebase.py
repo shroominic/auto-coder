@@ -47,9 +47,31 @@ class Codebase:
         with open(os.path.join(self.path, relative_path), "w") as f:
             f.write(content)
             
-    def change_file(self, relative_path, content) -> None:
-        with open(os.path.join(self.path, relative_path), "w") as f:
-            f.write(content)
+    def change_file(self, relative_path: str, changes: list) -> None:
+        """ Apply changes to file 
+        example_changes = [
+            # (line_number, action, "new code")
+            (0, 'add', "import newexample"),
+            (4, 'overwrite', "def foo():"),
+            (5, 'add', "    print('hello world')"),
+            (6, 'delete', "    print('bar')"),
+            ...
+        ]
+        """
+        file_path = os.path.join(self.path, relative_path)
+        with open(file_path, 'r') as f:
+            lines = f.readlines()
+
+        for line_number, action, new_code in changes:
+            if action == 'add':
+                lines.insert(line_number, '\n' + new_code + '\n')
+            elif action == 'overwrite':
+                lines[line_number] = new_code + '\n'
+            elif action == 'delete':
+                del lines[line_number]
+
+        with open(file_path, 'w') as f:
+            f.writelines(lines)
     
     def delete_file(self, relative_path) -> None:
         os.remove(os.path.join(self.path, relative_path))
