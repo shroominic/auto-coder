@@ -4,7 +4,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.chains import LLMChain
 
 from .codebase import Codebase
-from .templates import *
+from autocoder.templates import *
 
 
 class Issue:
