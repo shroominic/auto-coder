@@ -1,14 +1,27 @@
-import requests
-from .issue import Issue
-from .codebase import Codebase
+from requests import get as get_request
 from git import Repo, GitCommandError
+from sqlalchemy import Column, Integer, String, ForeignKey
+from autocoder.codebase import Codebase
+from ..base import Base
+from .issue import Issue
 
 
-class Repository:
+class Repository(Base):
+    """
+    Represents a git repository of the user
+    """
+    __tablename__ = "repositories"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    repo_url = Column(String, nullable=False)
+    access_token = Column(String, nullable=True)  # TODO: encrypt this
+    gptsummary = Column(String, nullable=True)
+    
     def __init__(self, repo_url, access_token=None):  # Add an access_token parameter
         self.repo_url = repo_url
-        self.owner, self.repo = self._extract_repo_info()
         self.access_token = access_token  # Store the access_token
+        self.owner, self.repo = self._extract_repo_info()
         self.repo_info = self._fetch_repo_info()
         self.codebase = self._init_codebase()
 
@@ -38,26 +51,20 @@ class Repository:
         headers = {}
         if self.access_token:  # Add the access token to the headers if provided
             headers["Authorization"] = f"Bearer {self.access_token}"
-        repo_response = requests.get(repo_api_url, headers=headers)  # Pass headers to the request
+        repo_response = get_request(repo_api_url, headers=headers)  # Pass headers to the request
         return repo_response.json()
     
-    def _init_codebase(self):
-        return Codebase(self)
+    def _init_codebase(self): return Codebase(self)
     
     @property
-    def name(self) -> str:
-        return self.repo_info['name']
+    def name(self) -> str: return self.repo_info['name']
 
     @property
-    def description(self) -> str:
-        return self.repo_info['description']
+    def description(self) -> str: return self.repo_info['description']
     
     @property
-    def keywords(self) -> list:
-        return self.repo_info['topics']
+    def keywords(self) -> list: return self.repo_info['topics']
     
-    def __repr__(self) -> str:
-        return f"Repository({self.name})"
+    def __repr__(self) -> str: return f"Repository({self.name})"
     
-    def __str__(self) -> str:
-        return self.name
+    def __str__(self) -> str: return self.name
