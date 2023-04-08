@@ -15,7 +15,6 @@ RUN pip install --upgrade pip && \
 RUN pip install psycopg2
 
 COPY autocoder /autocoder
-WORKDIR /autocoder
 
 EXPOSE 80
 
