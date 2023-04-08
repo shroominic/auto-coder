@@ -1,1 +1,1 @@
-import app, endpoints, routes, config
+from . import app, endpoints, routes, config

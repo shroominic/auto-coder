@@ -1,9 +1,10 @@
 from fastapi.staticfiles import StaticFiles
-from api.endpoints import home, issue
-from api.app import app
+from autocoder.api.endpoints import home, issue, healthcheck
+from autocoder.api.app import app
 
 
-app.mount("/static", StaticFiles(directory="src/web/static"), name="static")
+app.mount("/static", StaticFiles(directory="autocoder/api/static"), name="static")
 
 app.include_router(home.router)
-app.include_router(issue.router)
+app.include_router(healthcheck.router)
+# app.include_router(issue.router)
