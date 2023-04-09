@@ -1,27 +1,39 @@
 from requests import get as get_request
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, ForeignKey
 from autocoder.codebase import Codebase
 from autocoder.templates import *
 
-from ..base import Base
+from ..base import SpecialBase
+from ..engine import session
 
 
-class Issue(Base):
+class Issue(SpecialBase):
     """ 
     Represents an issue on a git repository
     """
     __tablename__ = "issues"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
     repository_id = Column(Integer, ForeignKey("repositories.id"))
+    issue_number = Column(Integer, nullable=False)
 
     def __init__(self, repository, issue_number: int):
-        self.repository = repository
+        self.repository_id = repository.id
         self.issue_number = issue_number
+        self.repository = repository
         self.issue_info = self._fetch_issue_info()
         self.branch_name = self._create_branch()
     
+    @classmethod
+    def from_url(cls, issue_url: str, access_token=None):
+        """ Create an issue from a url """
+        from .repository import Repository
+        
+        repo_url, issue_number = issue_url.split("/issues/")
+        issue_number = int(issue_number)
+        repository = Repository.get_or_create(session, repo_url=repo_url, access_token=access_token)
+        return cls.get_or_create(session, repository=repository, issue_number=issue_number)
+        
     def _fetch_issue_info(self):
         issue_api_url = f"https://api.github.com/repos/{self.repository.owner}/{self.repository.repo}/issues/{self.issue_number}"
         headers = {}

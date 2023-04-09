@@ -2,11 +2,11 @@ from requests import get as get_request
 from git import Repo, GitCommandError
 from sqlalchemy import Column, Integer, String, ForeignKey
 from autocoder.codebase import Codebase
-from ..base import Base
-from .issue import Issue
+from ..base import SpecialBase
+from ..engine import session
 
 
-class Repository(Base):
+class Repository(SpecialBase):
     """
     Represents a git repository of the user
     """
@@ -25,8 +25,14 @@ class Repository(Base):
         self.repo_info = self._fetch_repo_info()
         self.codebase = self._init_codebase()
 
-    def get_issue(self, issue_number) -> Issue:
-        return Issue(self, issue_number)
+    def get_issue(self, issue_number):
+        from .issue import Issue
+        
+        return Issue.get_or_create(
+            session, 
+            repository=self, 
+            issue_number=issue_number
+        )
     
     def create_branch(self, branch_name):
         repo = Repo(self.codebase.path)
