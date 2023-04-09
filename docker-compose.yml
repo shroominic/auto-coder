@@ -35,13 +35,13 @@ services:
 
   celery:
     build: .
-    command: celery -A main.celery_app worker --loglevel=info
+    command: celery -A autocoder.celery.worker worker --loglevel=info
     depends_on:
       - db
       - redis
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=rpc://
 
   redis:
     image: redis:alpine
