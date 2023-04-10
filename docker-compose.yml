@@ -18,14 +18,14 @@ services:
       timeout: 2s
       retries: 10
 
-  # frontend:
-  #   build: ./autocoder/frontend
-  #   ports:
-  #     - "8080:8080"
-  #   depends_on:
-  #     - backend
-  #   environment:
-  #     - API_URL=http://api:8000
+  frontend:
+    build: ./autocoder/frontend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - api
+    environment:
+      - API_URL=http://api:8000
 
   api:
     build: .
