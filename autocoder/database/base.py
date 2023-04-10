@@ -22,6 +22,9 @@ class SpecialBase(Base):
 
     @classmethod
     def get_or_create(cls, session, **kwargs):
+        # check if table exists
+        if not cls.__table__.exists(bind=session.bind):
+            cls.__table__.create(bind=session.bind)
         instance = cls.get(session, **kwargs)
         if instance:
             return instance
