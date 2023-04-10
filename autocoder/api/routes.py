@@ -7,4 +7,4 @@ app.mount("/static", StaticFiles(directory="autocoder/api/static"), name="static
 
 app.include_router(home.router)
 app.include_router(healthcheck.router)
-# app.include_router(issue.router)
+app.include_router(issue.router)
