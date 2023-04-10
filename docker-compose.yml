@@ -7,7 +7,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=neuralshirts
+      - POSTGRES_DB=autocodr
     ports:
       - "5432:5432"
     volumes:
@@ -32,6 +32,8 @@ services:
     command: uvicorn autocoder.api.app:app --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/autocodr
     depends_on:
       - db
       - redis
@@ -51,6 +53,7 @@ services:
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=rpc://
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/autocodr
 
   redis:
     image: redis:alpine
