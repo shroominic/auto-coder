@@ -17,12 +17,11 @@ class Issue(SpecialBase):
     repository_id = Column(Integer, ForeignKey("repositories.id"))
     issue_number = Column(Integer, nullable=False)
 
-    def __init__(self, repository, issue_number: int):
-        self.repository_id = repository.id
+    def __init__(self, repository_id, issue_number: int):
+        self.repository_id = repository_id
         self.issue_number = issue_number
-        self.repository = repository
         self.issue_info = self._fetch_issue_info()
-        self.branch_name = self._create_branch()
+        # self.branch_name = self._create_branch() # Check for access token before creating branch
     
     @classmethod
     def from_url(cls, issue_url: str, access_token=None):
@@ -32,7 +31,7 @@ class Issue(SpecialBase):
         repo_url, issue_number = issue_url.split("/issues/")
         issue_number = int(issue_number)
         repository = Repository.get_or_create(session, repo_url=repo_url, access_token=access_token)
-        return cls.get_or_create(session, repository=repository, issue_number=issue_number)
+        return cls.get_or_create(session, repository_id=repository.id, issue_number=issue_number)
         
     def _fetch_issue_info(self):
         issue_api_url = f"https://api.github.com/repos/{self.repository.owner}/{self.repository.repo}/issues/{self.issue_number}"
@@ -47,6 +46,11 @@ class Issue(SpecialBase):
         branch_name = f"autocoder-issue-{self.issue_number}"
         self.repository.create_branch(branch_name)
         return branch_name
+    
+    @property
+    def repository(self): 
+        from .repository import Repository
+        return Repository.get(session, id=self.repository_id)
     
     @property
     def title(self) -> str: return self.issue_info['title']
