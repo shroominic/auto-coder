@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -23,6 +25,9 @@ class HomePage extends StatefulWidget {
 
 class HomePageState extends State<HomePage> {
   bool _useAccessToken = false;
+  String _issueUrl = '';
+  String? _accessToken;
+
   bool isDarkMode() {
     final darkMode = WidgetsBinding.instance.window.platformBrightness;
     if (darkMode == Brightness.dark) {
@@ -32,11 +37,30 @@ class HomePageState extends State<HomePage> {
     }
   }
 
-  Future<int> sendRequest() async {
-    var debugUrl = Uri.parse('http://127.0.0.1/api/create_issue');
-    var response = await http.post(debugUrl,
-        headers: {"auth": "token"}, body: {"issue_url": "_issueUrl"});
-    return response.statusCode;
+  Future<void> createIssue() async {
+    const String apiUrl = 'http://127.0.0.1:8000/api/issue/create';
+
+    final Map<String, String> headers = {
+      'accept': 'application/json',
+      'Content-Type': 'application/json',
+    };
+
+    final Map<String, String> body = {
+      'issue_url': _issueUrl,
+      'access_token': _accessToken ?? '',
+    };
+
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: headers,
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode == 200) {
+      print('Issue created successfully');
+    } else {
+      print('Failed to create issue. Status code: ${response.statusCode}');
+    }
   }
 
   @override
@@ -65,8 +89,13 @@ class HomePageState extends State<HomePage> {
               Container(
                 constraints: const BoxConstraints(maxWidth: 420),
                 padding: const EdgeInsets.symmetric(vertical: 4),
-                child: const TextField(
-                  decoration: InputDecoration(
+                child: TextField(
+                  onChanged: (String value) {
+                    setState(() {
+                      _issueUrl = value;
+                    });
+                  },
+                  decoration: const InputDecoration(
                     labelText: 'github issue link',
                     border: OutlineInputBorder(),
                   ),
@@ -76,8 +105,13 @@ class HomePageState extends State<HomePage> {
                 Container(
                   constraints: const BoxConstraints(maxWidth: 420),
                   padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: const TextField(
-                    decoration: InputDecoration(
+                  child: TextField(
+                    onChanged: (String value) {
+                      setState(() {
+                        _accessToken = value;
+                      });
+                    },
+                    decoration: const InputDecoration(
                       labelText: 'access token',
                       border: OutlineInputBorder(),
                     ),
@@ -85,7 +119,9 @@ class HomePageState extends State<HomePage> {
                 ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  createIssue();
+                },
                 child: const Text('Solve it!'),
               ),
               const SizedBox(height: 20),
