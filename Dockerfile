@@ -5,7 +5,8 @@ RUN apk update && \
     build-base \
     gcc \
     libffi-dev \
-    postgresql-dev
+    postgresql-dev \
+    git
 
 COPY requirements.txt .
 RUN pip install --upgrade pip && \
