@@ -7,4 +7,4 @@ from database.models import Issue
 
 def solve(issue: Issue):
     """ Solve the issue by using langchain and start a pull request """
-    
+    pass
