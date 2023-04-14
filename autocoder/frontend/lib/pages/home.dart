@@ -16,7 +16,7 @@ class HomePageState extends State<HomePage> {
   String? _accessToken;
 
   Future<void> createIssue() async {
-    const String apiUrl = 'http://127.0.0.1:8000/api/issue/create';
+    const String apiUrl = 'http://127.0.0.1:8000/api/issue/solve';
 
     final Map<String, String> headers = {
       'accept': 'application/json',
