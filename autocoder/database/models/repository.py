@@ -2,11 +2,11 @@ from requests import get as get_request
 from git import Repo, GitCommandError
 from sqlalchemy import Column, Integer, String, ForeignKey
 from autocoder.codebase import Codebase
-from ..base import SpecialBase
-from ..engine import session
+from ..base import Base
+from ..utils import get_or_create
 
 
-class Repository(SpecialBase):
+class Repository(Base):
     """
     Represents a git repository of the user
     """
@@ -28,8 +28,8 @@ class Repository(SpecialBase):
     def get_issue(self, issue_number):
         from .issue import Issue
         
-        return Issue.get_or_create(
-            session, 
+        return get_or_create(
+            Issue,
             repository=self, 
             issue_number=issue_number
         )
