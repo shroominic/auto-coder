@@ -3,11 +3,11 @@ from sqlalchemy import Column, Integer, ForeignKey
 from autocoder.codebase import Codebase
 from autocoder.templates import *
 
-from ..base import SpecialBase
-from ..engine import session
+from ..utils import get, create, get_or_create
+from ..base import Base
 
 
-class Issue(SpecialBase):
+class Issue(Base):
     """ 
     Represents an issue on a git repository
     """
@@ -24,14 +24,15 @@ class Issue(SpecialBase):
         # self.branch_name = self._create_branch() # Check for access token before creating branch
     
     @classmethod
-    def from_url(cls, issue_url: str, access_token=None):
+    async def from_url(cls, issue_url: str, access_token=None):
         """ Create an issue from a url """
         from .repository import Repository
         
         repo_url, issue_number = issue_url.split("/issues/")
         issue_number = int(issue_number)
-        repository = Repository.get_or_create(session, repo_url=repo_url, access_token=access_token)
-        return cls.get_or_create(session, repository_id=repository.id, issue_number=issue_number)
+        
+        repository = await get_or_create(Repository, repo_url=repo_url, access_token=access_token)
+        return await get_or_create(cls, repository_id=repository.id, issue_number=issue_number)
         
     def _fetch_issue_info(self):
         issue_api_url = f"https://api.github.com/repos/{self.repository.owner}/{self.repository.repo}/issues/{self.issue_number}"
@@ -48,9 +49,14 @@ class Issue(SpecialBase):
         return branch_name
     
     @property
-    def repository(self): 
-        from .repository import Repository
-        return Repository.get(session, id=self.repository_id)
+    async def repository(self):
+        if hasattr(self, "_repository"):
+            return self._repository
+        else:
+            from .repository import Repository
+            repository = await get(Repository, id=self.repository_id)
+            self._repository = repository
+            return repository
     
     @property
     def title(self) -> str: return self.issue_info['title']
