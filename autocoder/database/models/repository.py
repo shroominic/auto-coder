@@ -30,7 +30,7 @@ class Repository(Base):
         
         return get_or_create(
             Issue,
-            repository=self, 
+            repository_id=self.id, 
             issue_number=issue_number
         )
     
