@@ -29,11 +29,11 @@ services:
 
   api:
     build: .
-    command: uvicorn autocoder.api.app:app --host 0.0.0.0 --port 8000
+    command: uvicorn autocoder.api.core:app --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/autocodr
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/autocodr
     depends_on:
       - db
       - redis
@@ -53,7 +53,7 @@ services:
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=rpc://
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/autocodr
+      - DATABASE_URL=postgresql://postgres+asyncpg:postgres@db:5432/autocodr
 
   redis:
     image: redis:alpine
