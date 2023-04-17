@@ -5,15 +5,28 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class AuthController {
-  final String baseUrl = "http://127.0.0.1/api"; // 'https://autocodr.com/api'
+  final String baseUrl =
+      "http://127.0.0.1:8000/api"; // 'https://autocodr.com/api'
   final storage = const FlutterSecureStorage();
   User? user;
 
+  // Singleton
+  static final AuthController _singleton = AuthController._internal();
+
+  factory AuthController() => _singleton;
+
+  AuthController._internal();
+
   Future<bool> requestEmailLink(String email) async {
-    try {
+    print("Sending email link to $email");
+    // try {
+    final Map<String, String> headers = {
+      'accept': 'application/json',
+    };
+
       final response = await http.post(
-        Uri.parse('$baseUrl/request-login'),
-        body: {'email': email},
+      Uri.parse('$baseUrl/request-login?email=$email'),
+      headers: headers,
       );
 
       if (response.statusCode == 200) {
@@ -21,10 +34,10 @@ class AuthController {
       } else {
         throw Exception('Failed to request email link');
       }
-    } catch (e) {
-      print(e.toString());
-      return false;
-    }
+    // } catch (e) {
+    //   print(e.toString());
+    //   return false;
+    // }
   }
 
   Future<User?> login(String token) async {
