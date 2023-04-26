@@ -1,7 +1,9 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from fastapi.responses import JSONResponse
-from autocoder.database.models import Issue
+from fastapi import Depends
+from autocoder.database.models import Issue, User
+from autocoder.api.utils.auth import authenticate_user
 
 router = APIRouter()
 
@@ -12,7 +14,7 @@ class IssueCreate(BaseModel):
     
 
 @router.post("/issue/create")
-async def create_issue(issue: IssueCreate):
+async def create_issue(issue: IssueCreate, user: User = Depends(authenticate_user)):
     """ Create an issue in the database """
     try:
         Issue.from_url(
@@ -43,22 +45,29 @@ from autocoder.langchain_shortcuts import (
 )
 
 @router.post("/issue/solve")
-async def solve_issue(issue: IssueCreate):
+async def solve_issue(issue: IssueCreate, user: User = Depends(authenticate_user)):
     """ Solve the issue by using langchain and start a pull request """
+    print(user.email)
+    return JSONResponse(
+        status_code=200,
+        content={"status": "ok"}
+    )
+    
     issue_url = issue.issue_url
     repo_url, issue_number = issue_url.split("/issues/")
 
-    repo = Repository(repo_url, issue.access_token or None)
-    issue = await repo.get_issue(issue_number)
+    repository = Repository(repo_url, issue.access_token or None)
+    print(issue.access_token)
+    issue: Issue = await repository.get_issue(issue_number)
 
     context = {
-        "repo_name": issue.repository.name, 
-        "repo_keywords": issue.repository.keywords, 
-        "repo_description": issue.repository.description, 
+        "repo_name": repository.name, 
+        "repo_keywords": repository.keywords, 
+        "repo_description": repository.description, 
         "issue_title": issue.title, 
         "issue_number": str(issue.issue_number),
         "issue_description": issue.body, 
-        "code_tree": issue.repository.codebase.tree
+        "code_tree": repository.codebase.tree
     }
 
     coding_system_prompt = """
@@ -92,14 +101,14 @@ async def solve_issue(issue: IssueCreate):
         important_files_prompt, 
         "relevant_files",
         system_instruction=coding_system_prompt,
-        validation=issue.codebase.validate_file_paths,
+        validation=repository.codebase.validate_file_paths,
         **context
     )
 
     relevant_files_dict = {}
     for path in relevant_file_paths:
         path = path.strip("'") # TODO: remove this 
-        relevant_files_dict[path] = issue.codebase.show_file(path)
+        relevant_files_dict[path] = repository.codebase.show_file(path)
 
     context["relevant_files"] = str(relevant_files_dict)
     relevant_files_dict
@@ -191,10 +200,10 @@ async def solve_issue(issue: IssueCreate):
 
             print("New files:", new_files)
             print("Files to change:", files_to_change)
-            if not issue.codebase.validate_file_paths(files_to_change):
+            if not repository.codebase.validate_file_paths(files_to_change):
                 raise ValueError("Some files to change do not exist in the codebase.")
 
-            if any(issue.codebase.file_exists(f) for f in new_files): 
+            if any(repository.codebase.file_exists(f) for f in new_files): 
                 raise ValueError("Some new files already exist in the codebase.")
 
             return new_files, files_to_change
@@ -276,7 +285,7 @@ async def solve_issue(issue: IssueCreate):
     change_files_dict = {}
     for path in files_to_change:
         context["file_path"] = path
-        context["file_content"] = issue.codebase.show_file(path)
+        context["file_content"] = repository.codebase.show_file(path)
         
         changes_content = await get_code_response(
             change_file,
@@ -293,11 +302,11 @@ async def solve_issue(issue: IssueCreate):
         ]
 
     for file, content in new_files_dict.items():
-        issue.codebase.create_file(file, content)
+        repository.codebase.create_file(file, content)
         print("Created:", file, "\nwith content:", content, "\n")
         
     for file, changes in change_files_dict.items():
-        issue.codebase.change_file(file, changes)
+        repository.codebase.change_file(file, changes)
         print("Changed:", file, "\nwith changes:", changes, "\n")
 
-    issue.codebase.commit_changes("Solved issue using GPT-4")
+    repository.codebase.commit_changes("Solved issue using GPT-4")
