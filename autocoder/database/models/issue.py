@@ -17,10 +17,10 @@ class Issue(Base):
     repository_id = Column(Integer, ForeignKey("repositories.id"))
     issue_number = Column(Integer, nullable=False)
 
-    def __init__(self, repository_id, issue_number: int):
+    def __init__(self, repository_id, issue_number: int, repository=None):
         self.repository_id = repository_id
         self.issue_number = issue_number
-        self.issue_info = self._fetch_issue_info()
+        self.issue_info = self._fetch_issue_info(repository=repository)
         # self.branch_name = self._create_branch() # Check for access token before creating branch
     
     @classmethod
@@ -34,11 +34,11 @@ class Issue(Base):
         repository = await get_or_create(Repository, repo_url=repo_url, access_token=access_token)
         return await get_or_create(cls, repository_id=repository.id, issue_number=issue_number)
         
-    def _fetch_issue_info(self):
-        issue_api_url = f"https://api.github.com/repos/{self.repository.owner}/{self.repository.repo}/issues/{self.issue_number}"
+    def _fetch_issue_info(self, repository=None):
+        issue_api_url = f"https://api.github.com/repos/{repository.owner}/{repository.repo}/issues/{self.issue_number}"
         headers = {}
-        if self.repository.access_token:  # Add the access token to the headers if provided
-            headers["Authorization"] = f"Bearer {self.repository.access_token}"
+        if repository.access_token:  # Add the access token to the headers if provided
+            headers["Authorization"] = f"Bearer {repository.access_token}"
         issue_response = get_request(issue_api_url, headers=headers)  # Pass headers to the request
         return issue_response.json()
 
