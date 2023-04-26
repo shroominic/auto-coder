@@ -83,6 +83,7 @@ class Codebase:
         os.remove(os.path.join(self.path, relative_path))
         
     def commit_changes(self, message) -> None:
+        self.repository.create_branch("autocoder-solving-issue")
         repo = Repo(self.path)
         
         repo.git.add(A=True)
