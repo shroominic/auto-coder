@@ -19,7 +19,7 @@ services:
       retries: 10
 
   api:
-    build: .
+    image: autocodr_api:latest
     command: uvicorn autocoder.api.app:app --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000"
@@ -54,7 +54,7 @@ services:
      command: certonly --webroot --webroot-path=/var/www/certbot --email parasol.torsion-0c@icloud.com --agree-tos --no-eff-email --force-renewal -d ${DOMAIN} -d www.${DOMAIN}
 
   celery:
-    build: .
+    image: autocodr_api:latest
     command: celery -A main.celery_app worker --loglevel=info
     depends_on:
       - db
