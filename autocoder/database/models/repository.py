@@ -25,13 +25,14 @@ class Repository(Base):
         self.repo_info = self._fetch_repo_info()
         self.codebase = self._init_codebase()
 
-    def get_issue(self, issue_number):
+    async def get_issue(self, issue_number):
         from .issue import Issue
         
-        return get_or_create(
+        return await get_or_create(
             Issue,
             repository_id=self.id, 
-            issue_number=issue_number
+            issue_number=issue_number,
+            repository=self
         )
     
     def create_branch(self, branch_name):
