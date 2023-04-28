@@ -1,4 +1,5 @@
 import 'package:autocodr/controller/auth.dart';
+import 'package:autocodr/pages/login.dart';
 import 'package:flutter/material.dart';
 import 'pages/home.dart';
 
@@ -35,7 +36,12 @@ class AutoCodr extends StatelessWidget {
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      home: const HomePage(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const HomePage(),
+        '/login': (context) => const LoginScreen(),
+      },
     );
   }
+
 }
