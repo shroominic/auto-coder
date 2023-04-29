@@ -1,14 +1,17 @@
-import 'package:autocodr/models/user.dart';
-
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:autocodr/models/user.dart';
 
 class AuthController {
   final String baseUrl =
       "http://127.0.0.1:8000/api"; // 'https://autocodr.com/api'
   final storage = const FlutterSecureStorage();
   User? user;
+
+  final _authStateController = StreamController<bool>.broadcast();
+  Stream<bool> get authStateChanges => _authStateController.stream;
 
   // Singleton
   static final AuthController _singleton = AuthController._internal();
@@ -17,16 +20,18 @@ class AuthController {
 
   AuthController._internal();
 
+  bool get isAuthenticated => user != null;
+
   Future<bool> requestEmailLink(String email) async {
     print("Sending email link to $email");
-    // try {
-    final Map<String, String> headers = {
-      'accept': 'application/json',
-    };
+    try {
+      final Map<String, String> headers = {
+        'accept': 'application/json',
+      };
 
       final response = await http.post(
-      Uri.parse('$baseUrl/request-login?email=$email'),
-      headers: headers,
+        Uri.parse('$baseUrl/request-login?email=$email'),
+        headers: headers,
       );
 
       if (response.statusCode == 200) {
@@ -34,10 +39,10 @@ class AuthController {
       } else {
         throw Exception('Failed to request email link');
       }
-    // } catch (e) {
-    //   print(e.toString());
-    //   return false;
-    // }
+    } catch (e) {
+      print(e.toString());
+      return false;
+    }
   }
 
   Future<User?> login(String token) async {
@@ -47,7 +52,9 @@ class AuthController {
       );
       if (response.statusCode == 200) {
         await storage.write(key: 'user', value: response.body);
-        return User.fromJson(jsonDecode(response.body));
+        user = User.fromJson(jsonDecode(response.body));
+        _authStateController.add(true);
+        return user;
       } else {
         throw Exception('Failed to log in');
       }
@@ -57,26 +64,17 @@ class AuthController {
     }
   }
 
-  Future<bool> isAuthenticated() async {
-    if (user != null) {
-      return true;
-    } else {
-      String? jsonUser = await storage.read(key: 'user');
-      if (jsonUser == null) {
-        return false;
-      } else {
-        user = User.fromJson(jsonDecode(jsonUser));
-        return true;
-      }
-    }
-  }
-
   Future<bool> verifyLogin() async {
-    if (await isAuthenticated()) {
+    final user = this.user;
+    if (user != null) {
       try {
         final response = await http.get(
           Uri.parse('$baseUrl/verify-login'),
-        );
+          headers: <String, String>{
+          'Authorization': 'Bearer ${user.accessToken}',
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+        });
 
         if (response.statusCode == 200) {
           return true;
@@ -84,7 +82,7 @@ class AuthController {
           String email =
               jsonDecode((await storage.read(key: 'user'))!)['email'];
           await requestEmailLink(email);
-          storage.delete(key: 'user');
+          logout();
           return false;
         }
       } catch (e) {
@@ -97,6 +95,8 @@ class AuthController {
   }
 
   Future<void> logout() async {
+    user = null;
+    _authStateController.add(false);
     await storage.delete(key: 'user');
   }
 }
