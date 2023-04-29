@@ -16,16 +16,13 @@ class HomePageState extends State<HomePage> {
   String _issueUrl = '';
   String? _githubAccessToken;
   final authController = AuthController();
-  bool showLogin = false;
   String login_email = '';
-  String login_token = '';
-  bool showToken = false;
 
   Future<void> createIssue() async {
     const String apiUrl = 'http://127.0.0.1:8000/api/issue/solve';
     String _loginAccessToken = 'error';
 
-    if (await authController.isAuthenticated()) {
+    if (authController.isAuthenticated) {
       _loginAccessToken = authController.user!.accessToken;
     }
 
@@ -59,32 +56,27 @@ class HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text('🤖 AutoCodr'),
         actions: [
-          FutureBuilder(
-            future: authController.isAuthenticated(),
-            builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-              if (snapshot.hasData) {
-                if (snapshot.data!) {
-                  return TextButton(
-                    onPressed: () {
-                      authController.logout();
-                    },
-                    child: const Text('Logout'),
-                  );
-                } else {
-                  return TextButton(
-                    onPressed: () {
-                      setState(() {
-                        showLogin = !showLogin;
-                      });
-                    },
-                    child: const Text('Login'),
-                  );
-                }
-              } else {
-                return const SizedBox();
-              }
-            },
-          )
+          if (authController.isAuthenticated)
+            TextButton(
+              onPressed: () {
+                authController.logout();
+                Navigator.pushNamed(context, '/login');
+              },
+              child: const Text(
+                'Logout',
+                style: TextStyle(color: Colors.white),
+              ),
+            )
+          else
+            TextButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/login');
+              },
+              child: const Text(
+                'Login',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
         ],
       ),
       body: Stack(
@@ -149,57 +141,19 @@ class HomePageState extends State<HomePage> {
               ],
             ),
           ),
-          if (showLogin)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                children: [
-                  if (!showToken)
-                    TextField(
-                      controller: TextEditingController(text: login_email),
-                      onChanged: (value) {
-                        login_email = value;
-                      },
-                      decoration: const InputDecoration(
-                        labelText: 'input email',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  if (!showToken)
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: ElevatedButton(
-                        onPressed: () {
-                          authController.requestEmailLink(login_email);
-                          setState(() {
-                            showToken = true;
-                          });
-                        },
-                        child: const Text('Send email link'),
-                      ),
-                    ),
-                  if (showToken)
-                    TextField(
-                      controller: TextEditingController(text: login_token),
-                      onChanged: (value) {
-                        login_token = value;
-                      },
-                      decoration: const InputDecoration(
-                        labelText: 'input token from email',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  if (showToken)
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: ElevatedButton(
-                        onPressed: () {
-                          authController.login(login_token);
-                        },
-                        child: const Text('Login with Token'),
-                      ),
-                    ),
-                ],
+          if (authController.isAuthenticated)
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                child: Text(
+                  'Logged in as ${authController.user!.email}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
         ],
