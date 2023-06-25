@@ -48,10 +48,10 @@ from autocoder.langchain_shortcuts import (
 async def solve_issue(issue: IssueCreate, user: User = Depends(authenticate_user)):
     """ Solve the issue by using langchain and start a pull request """
     print(user.email)
-    return JSONResponse(
-        status_code=200,
-        content={"status": "ok"}
-    )
+    # return JSONResponse(
+    #     status_code=200,
+    #     content={"status": "ok"}
+    # )
     
     issue_url = issue.issue_url
     repo_url, issue_number = issue_url.split("/issues/")
