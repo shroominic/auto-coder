@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{% block title %}{% endblock %}</title>
+    <link id="favicon" rel="icon" type="image/x-icon" href="static/img/favicon.ico">
+    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/main.css') }}">
+    {% block head %}
+    {% endblock %}
+</head>
+<body class="flex flex-col h-screen justify-between">
+    <header class="flex items-center justify-between py-8 px-16">
+        <a href="{{ url_for('home') }}" class="text-2xl font-bold">AutoCoder</a>
+        <nav>
+            <ul class="flex space-x-4 font-semibold">
+                <li><a href="">Pricing</a></li>
+                <li><a href="">FAQ</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 py-8 mb-auto">
+        {% block content %}
+        {% endblock %}
+    </main>
+    <footer class="py-4">
+        <div class="container mx-auto px-4">
+            <p class="text-center">&copy; 2023 AutoCoder</p>
+        </div>
+    </footer>
+</body>
+</html>
