@@ -1,4 +1,4 @@
-version: '3.7'
+version: '3.8'
 
 services:
   db:
@@ -18,22 +18,13 @@ services:
       timeout: 2s
       retries: 10
 
-  frontend:
-    build: ./autocoder/frontend
-    ports:
-      - "8080:8080"
-    depends_on:
-      - api
-    environment:
-      - API_URL=http://api:8000
-
   api:
-    build: .
-    command: uvicorn autocoder.api.core:app --host 0.0.0.0 --port 8000
+    image: autocodr-api
+    build: autocodr
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/autocodr
+    env_file:
+      - .env
     depends_on:
       - db
       - redis
@@ -44,29 +35,5 @@ services:
       timeout: 5s
       retries: 3
 
-  celery:
-    build: .
-    command: celery -A autocoder.celery.worker worker --loglevel=info
-    depends_on:
-      - db
-      - redis
-    environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=rpc://
-      - DATABASE_URL=postgresql://postgres+asyncpg:postgres@db:5432/autocodr
-
-  redis:
-    image: redis:alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-
 volumes:
   postgres:
-  redis:
