@@ -51,6 +51,19 @@ async def get_response(
     ).ainvoke(input_kwargs)
 
 
+class CodeBlocks(BaseModel):
+    """ 
+    A model for code blocks returned by chatgpt.
+    """
+    code_blocks: List[str]
+    
+    def parse(self, parser: Type[T]) -> T:
+        """ 
+        Parse the code blocks using the provided parser.
+        """
+        return parser.parse(self.code_blocks[0])
+        
+
 def extract_codeblocks(from_response: str) -> list[str]:
     """ Get all codeblocks from the provided response """
     return [
