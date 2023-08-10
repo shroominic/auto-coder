@@ -2,10 +2,10 @@
 AUTO CODER - A tool to take the job of all programmers
 Solves your issues by creating pull requests for you
 
-final version will be a website or a cli tool 
+final version will be a website or a cli tool
 input: github repo url and issue number
 
-bot is cloning the repo and create a class with it that conbains 
+bot is cloning the repo and create a class with it that conbains
 files and issues
 at least a single test case needs to exist in the repo to continues
 maybe just running the program and doing a healthcheck is enough
