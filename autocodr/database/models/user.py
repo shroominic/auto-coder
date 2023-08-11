@@ -1,15 +1,16 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime
-from ..base import Base
+
+from sqlmodel import Field
+
+from .base import Base
 
 
-class User(Base):
-    __tablename__ = "users"
+class User(Base, table=True):
+    email: str = Field(nullable=False, unique=True)
+    login_token: str | None = Field(nullable=True)
+    token_expiration: datetime | None = Field(nullable=True)
 
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
-    login_token = Column(String, nullable=True)
-    token_expiration = Column(DateTime, nullable=True)
-    
     def token_is_valid(self):
+        if not self.token_expiration:
+            return False
         return self.token_expiration > datetime.now()
