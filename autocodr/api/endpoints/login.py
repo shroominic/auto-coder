@@ -1,20 +1,21 @@
 import uuid
 from datetime import datetime, timedelta
-from fastapi import HTTPException, Depends, APIRouter
+
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi_jwt_auth import AuthJWT  # type: ignore
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from autocodr.database import get_session, models
-from autocodr.api.utils.email import send_login_email
 from autocodr.api.utils.auth import authenticate_user
-
+from autocodr.api.utils.email import send_login_email
+from autocodr.database import get_session, models
 
 router = APIRouter()
 
 
 @router.post("/request-login")
 async def request_email_link(email: str, session: AsyncSession = Depends(get_session)):
-    try:  
+    try:
         user = await models.User.from_email(session, email)
         # create token
         # user.login_token = str(uuid.uuid4())
@@ -22,26 +23,23 @@ async def request_email_link(email: str, session: AsyncSession = Depends(get_ses
         await user.update_login_token(session)
 
         await send_login_email(user, user.login_token)
-        return {
-            "status": "ok", 
-            "message": f"Email sent to {email}."
-        }
+        return {"status": "ok", "message": f"Email sent to {email}."}
 
     except Exception as e:
         print(e)
-        return {
-            "status": "error", 
-            "message": str(e)
-        }
+        return {"status": "error", "message": str(e)}
 
 
 @router.get("/login")
 async def login(token: str, session: AsyncSession = Depends(get_session)):
     user = (await session.execute(select(models.User).filter_by(login_token=token))).scalar_one_or_none()
-    if not user: raise HTTPException(status_code=400, detail="Invalid login token")
-    else: print(user.email, user.login_token, user.token_expiration)
-    if not user.token_is_valid(): raise HTTPException(status_code=400, detail="Login token expired")
-    
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid login token")
+    else:
+        print(user.email, user.login_token, user.token_expiration)
+    if not user.token_is_valid():
+        raise HTTPException(status_code=400, detail="Login token expired")
+
     # Invalidate the token after use
     user.login_token = None
     user.token_expiration = None
@@ -52,5 +50,5 @@ async def login(token: str, session: AsyncSession = Depends(get_session)):
 
 
 @router.get("/auth-test")
-async def protected_route(user: User = Depends(authenticate_user)):
+async def protected_route(user: models.User = Depends(authenticate_user)):
     return {"message": f"Hello, {user.email}!"}
