@@ -1,0 +1,56 @@
+LET AI SOLVE YOUR GITHUB ISSUE
+------------------------------
+|   -< enter issue url >-    |
+------------------------------
+| > > BUY NOW FOR 💶x20€ < < |  <-- Rainbow Effect
+------------------------------
+ GET INSTANT REFUND ON ERRORS
+
+ (make the customer feel good if 
+   he donates instead of getting refund)
+  - particle effect on button click
+  - confirm refund policy and write detailed feedback 
+  - check with chatgpt if feedback is useful
+  - ask again if not useful 
+  - 
+
+
+Setup git bot that puts todo files in your codebase
+
+# step 1
+setup project of customer and look through github issues or create issues based on the codebase if not exsisting
+
+# step 2 
+go through all issues and create {{file_name}}.new.todo files in the codebase
+also mark file changes with {{file_name}}.change.todo
++ commit all changes
+
+# step 3
+for all new files fill in a description on what new file to create
+for all file changes create a list of instructions to change the file
+(so the .todo files represent and abstract description of what todo)
+
+# step 4
+go step by step over all .todo files, apply changes, commit changes and test the code
+
+# step 4.5 
+do other things to optimize creating files and doing changes
+
+# step 5
+do automatic debugging until the code works and stop at a limit of debugging to prevent infinite loops
+
+# step 6
+create pull request or comment below the issue with description on what the bot tried todo 
+(depending on how well the process got excecuted)
+
+# extras
+  - ask customer if he wants a refund
+    or donate it to fund more research on this project
+  - check for responses to the comment on the issue
+    check for feedback on the pull request
+  - ask customer to write todo files for this issue if 
+    it was not working and try to fix it using these
+
+
+
+
