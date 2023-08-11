@@ -1,255 +1,127 @@
-from uuid import UUID
+import re
 # from autocodr.schemas import TaskResult
-from autocodr.database.models import Issue, Repository
+from autocodr.database import models
+from autocodr.repobox import CodeBase
+from autocodr.chain.shortcuts import (
+    get_response,
+    get_code_response,
+    get_file_paths,
+    get_multiple_file_paths,
+)
+from autocodr.chain.templates import (
+    coding_system_prompt,
+    important_files,
+    repo_summary,
+    issue_summary,
+    prepare_changes,
+    change_file,
+    new_file,
+)
+    
 
 
-async def solve_issue(issue_id: UUID): # -> TaskResult:
-    """ Solve the issue by using langchain and start a pull request """
-    issue = await Issue.from_id(issue_id)
-    repository = await Repository.from_issue(issue)
+async def solve_issue(
+    task: models.Task,
+):  # -> TaskResult:
+    """Solve the issue by using langchain and start a pull request"""
+    repository, issue = task.get_repo_and_issue()
+    codebase = await CodeBase.from_repo(repository)
 
     context = {
         "repo_name": repository.name,
-        "repo_keywords": repository.keywords,
+        "repo_keywords": repository.get_topics(),
         "repo_description": repository.description,
         "issue_title": issue.title,
-        "issue_number": str(issue.issue_number),
+        "issue_number": str(task.issue_number),
         "issue_description": issue.body,
-        "code_tree": repository.codebase.tree
+        "code_tree": repository.get_git_tree(sha=repository.default_branch),
     }
 
-    coding_system_prompt = """
-    You are a coding assistant solving tasks for developers.
-    Tasks are represented as issues on GitHub repositories.
-    Be verbose and precise in your responses.
-
-    The following is a conversation about solving issue {issue_title} #{issue_number} on {repo_name}.
-    """
-
-    important_files_prompt = """
-    Which files are important to read for gaining understanding of the codebase?
-
-    Codebase:
-    {code_tree}
-
-    For example in a python project you might want to look at the 'requirements.txt' file to understand which technologies are used in the project.\n
-    Reply like this and make sure pathes are in 'single quotes' and not "double quotes":
-
-    ```python
-    relevant_files = [
-        'path/to/file1.txt',  # do not start with ./ or /
-        'path/to/file2.js',
-        ...
-        # max 4 files so choose wisely
-    ]
-    ```
-    """
-
     relevant_file_paths = await get_file_paths(
-        important_files_prompt, 
+        important_files,
         "relevant_files",
-        system_instruction=coding_system_prompt,
-        validation=repository.codebase.validate_file_paths,
+        # validation=repository.codebase.validate_file_paths,
         **context
     )
 
-    relevant_files_dict = {}
-    for path in relevant_file_paths:
-        path = path.strip("'") # TODO: remove this 
-        relevant_files_dict[path] = repository.codebase.show_file(path)
+    relevant_files_dict: dict[str, str] = {}
 
-    context["relevant_files"] = str(relevant_files_dict)
-    relevant_files_dict
-
-    repo_summary_prompt = """
-    Summarize what this repository is about and what it does to have a better understanding and context of the codebase.
-    Repository name:
-    {repo_name}
-    Repository description:
-    {repo_description}
-    Repository keywords:
-    {repo_keywords}
-    Repository codebase:
-    {code_tree}
-    Relevant files: 
-    {relevant_files}
-
-    Describe the technologies used and the structure of the codebase.
-    Please be as detailed and precise as possible but keep it short.
-    """
+    context["relevant_files"] = str(
+        relevant_files_dict.update(
+            [
+                (path, await codebase.show_file(path) or "")
+                for path in relevant_file_paths
+            ]
+        ) or relevant_files_dict
+    )
 
     context["repo_summary"] = await get_response(
-        repo_summary_prompt, 
-        system_instruction=coding_system_prompt, 
+        repo_summary,
+        system=coding_system_prompt,
         **context
     )
-
-    issue_summary_prompt = """
-    Repository codebase:
-    {code_tree}
-    Repository Summary:
-    {repo_summary}
-    Issue title: 
-    {issue_title}
-    Issue description: 
-    {issue_description}
-
-    Describe step by step (abstract) how to implement the issue and what files are relevant.
-    Be precise and keep it short.
-    """
-
-    get_changes_prompt = """
-    Repository codebase:
-    {code_tree}
-    Repository description:
-    {repo_summary}
-    Issue description:
-    {issue_summary}
-
-    What files need to be changed to solve the issue?
-    What new files need to be created?
-
-    Write paths using 'single quotes'.
-    Make sure to put only file paths that exist in the codebase/project directory in files_to_change.
-    Respond with a codeblock like this:
-    ```python
-    new_files = [
-        'path/to/new_file1.py', # do not start with ./ or /
-        'path/to/new_file2.ipynb',
-        ...
-    ]
-
-    files_to_change = [
-        'path/to/file1.txt',  # do not start with ./ or /
-        'path/to/file2.js',
-        ...
-    ]
-    ```
-    """
 
     async def get_files(retry=3):
         try:
             context["issue_summary"] = await get_response(
-                issue_summary_prompt,
-                system_instruction=coding_system_prompt,
-                verbose=True,
-                **context
-            )
-            
-            files_to_change = await get_response(
-                get_changes_prompt,
-                system_instruction=coding_system_prompt,
-                verbose=True,
-                **context
+                issue_summary, system=coding_system_prompt, **context
             )
 
-            new_files = extract_files(files_to_change, "new_files")
-            files_to_change = extract_files(files_to_change, "files_to_change")
+            file_modifications = await get_multiple_file_paths(
+                prepare_changes, **context
+            )
+
+            new_files = file_modifications["new_files"]
+            files_to_change = file_modifications["change_files"]
 
             print("New files:", new_files)
             print("Files to change:", files_to_change)
-            if not repository.codebase.validate_file_paths(files_to_change):
+            if not await codebase.validate_file_paths(files_to_change):
                 raise ValueError("Some files to change do not exist in the codebase.")
 
-            if any(repository.codebase.file_exists(f) for f in new_files): 
+            if any([await codebase.file_exists(f) for f in new_files]):
                 raise ValueError("Some new files already exist in the codebase.")
 
             return new_files, files_to_change
-        
+
         except Exception as e:
             if retry > 0:
                 print("Retrying...", e)
-                return await get_files(retry=retry-1)
-            else: raise e
-
+                return await get_files(retry=retry - 1)
+            else:
+                raise e
 
     new_files, files_to_change = await get_files()
 
     print("New files:", new_files)
     print("Files to change:", files_to_change)
 
-    new_file_prompt = """
-    Repository description:
-    {repo_summary}
-
-    Issue description:
-    {issue_summary}
-
-    Implement this file {file_path} to solve the issue.
-    After completion this the file will be created and added to the codebase.
-    Reply with a codeblock containing the content of the new file.
-    """
-
     new_files_dict = {}
     for path in new_files:
         context["file_path"] = path
-        
-        new_file_content = await get_code_response(
-            new_file_prompt,
-            system_instruction=coding_system_prompt,
-            **context
-        )
-        
+
+        new_file_content = await get_code_response(new_file, **context)
+
         new_files_dict[path] = new_file_content
-
-    change_file = """
-    Repository description:
-    {repo_summary}
-    Issue description:
-    {issue_summary}
-    First write a detailed instruction on how to change the file {file_path}.
-
-    # [Begin file content]
-    {file_content}
-    # [Eind file content]
-
-    Then create a list called "changes".
-    This list should contain tuples of the form (line_number, action, "new code").
-    Action can be one of the following:
-    - add: insert a new line of code at the line with the given number and shift all following lines down
-    - overwrite: overwrite the line with the given number
-    - delete: delete the line with the given number
-
-    Write down all changes and 
-    reply with a codeblock like this:
-    ```python
-    # (line_number, 'action', 'new code')
-    # make sure use 'single quotes' and not "double quotes" or `backticks` like in this example:
-    changes = [
-        (0, 'add', 'import newexample'),
-        (4, 'overwrite', 'def foo():'),
-        (5, 'add', '    print("hello world")'),
-        (6, 'delete', '    print("bar")'),
-        ...
-    ]
-    ```
-    """
 
     change_files_dict = {}
     for path in files_to_change:
         context["file_path"] = path
-        context["file_content"] = repository.codebase.show_file(path)
-        
-        changes_content = await get_code_response(
-            change_file,
-            system_instruction=coding_system_prompt,
-            **context
-        )
-        
+        context["file_content"] = await codebase.show_file(path)
+
+        changes_content = await get_code_response(change_file, system_instruction=coding_system_prompt, **context)
+
         tuple_pattern = re.compile(r"\((\d+),\s*\'(.*?)\',\s*\'(.*?)\'\)", re.DOTALL)
         tuples = tuple_pattern.findall(changes_content)
-        
-        change_files_dict[path] = [
-            (int(line), action, change) 
-            for line, action, change in tuples
-        ]
+
+        change_files_dict[path] = [(int(line), action, change) for line, action, change in tuples]
 
     for file, content in new_files_dict.items():
-        repository.codebase.create_file(file, content)
+        await codebase.create_file(file, content)
         print("Created:", file, "\nwith content:", content, "\n")
-        
+
     for file, changes in change_files_dict.items():
-        repository.codebase.change_file(file, changes)
+        await codebase.change_file(file, changes)
         print("Changed:", file, "\nwith changes:", changes, "\n")
 
-    repository.codebase.commit_changes("Solved issue using GPT-4")
+    await codebase.commit_changes("Solved issue using GPT-4")
