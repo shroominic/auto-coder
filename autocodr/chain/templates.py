@@ -28,13 +28,15 @@ Codebase:
 For example in a python project you might want to look at the 'requirements.txt' file to understand which technologies are used in the project.\n
 Reply like this and make sure pathes are in 'single quotes' and not "double quotes":
 
-```python
-relevant_files = [
-    'path/to/file1.txt',  # do not start with ./ or /
-    'path/to/file2.js',
-    ...
-    # max 4 files so choose wisely
-]
+```json
+{{
+    "relevant_files": [
+        "path/to/file1.txt",
+        "path/to/file2.js",
+        // ... and so on
+        // but choose wisely: max 4 files
+    ]  
+}}
 ```
 """
 )
@@ -76,18 +78,20 @@ What new files need to be created?
 Write paths using 'single quotes'.
 Make sure to put only file paths that exist in the codebase/project directory in files_to_change.
 Respond with a codeblock like this:
-```python
-new_files = [
-    'path/to/new_file1.py', # do not start with ./ or /
-    'path/to/new_file2.ipynb',
-    ...
-]
 
-change_files = [
-    'path/to/file1.txt',  # do not start with ./ or /
-    'path/to/file2.js',
-    ...
-]
+```json
+{{
+    "new_files": [
+        "path/to/new_file1.py",
+        "path/to/new_file2.ipynb",
+        // ... and so on
+    ],
+    "change_files": [
+        "path/to/file1.txt",
+        "path/to/file2.js",
+        // ... and so on
+    ]
+}}
 ```
 """
 )
@@ -127,16 +131,17 @@ Action can be one of the following:
 
 Write down all changes and
 reply with a codeblock like this:
-```python
-# (line_number, 'action', 'new code')
-# make sure use 'single quotes' and not "double quotes" or `backticks` like in this example:
-changes = [
-    (0, 'add', 'import newexample'),
-    (4, 'overwrite', 'def foo():'),
-    (5, 'add', '    print("hello world")'),
-    (6, 'delete', '    print("bar")'),
-    ...
-]
+        # (line_number, 'action', 'new code')
+```json
+{{
+    "changes": [
+        [0, "add", "import newexample"],
+        [4, "overwrite", "def foo():"],
+        [5, "add", "    print(\"hello world\")"],
+        [6, "delete", "    print(\"bar\")"]
+        // ... and so on
+    ]
+}}
 ```
 """
 )
