@@ -27,8 +27,6 @@ services:
       - .env
     depends_on:
       - db
-      - redis
-      - celery
     healthcheck:
       test: curl --fail http://127.0.0.1:8000/healthcheck/ || exit 1
       interval: 17s

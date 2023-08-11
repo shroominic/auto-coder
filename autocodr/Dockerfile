@@ -1,22 +1,24 @@
 FROM --platform=arm64 python:slim
 
-RUN apk update && apk add --no-cache \
-    build-base gcc libffi-dev \
-    postgresql-dev git
+RUN apt-get update && apt-get install -y \
+    build-essential gcc libffi-dev \
+    libpq-dev git
 
-COPY pyproject.toml poetry.lock /autocoder/
+COPY pyproject.toml poetry.lock /autocodr/
 
 RUN pip install --upgrade pip && \
     pip install poetry && \
     poetry config virtualenvs.create false && \
-    cd /autocoder && \
+    cd /autocodr && \
     poetry install --no-dev
 
 # RUN apk del build-base gcc libffi-dev && \
 #     rm -rf /var/cache/apk/*
 
-COPY . /autocoder
+WORKDIR /
+
+COPY . /autocodr
 
 EXPOSE 8000
 
-CMD uvicorn autocoder.api.core:app --host 0.0.0.0 --port 8000
+CMD uvicorn autocodr.api.core:app --host 0.0.0.0 --port 8000
