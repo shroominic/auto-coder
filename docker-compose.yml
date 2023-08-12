@@ -29,9 +29,11 @@ services:
       - db
     healthcheck:
       test: curl --fail http://127.0.0.1:8000/healthcheck/ || exit 1
-      interval: 17s
+      interval: 9s
       timeout: 5s
       retries: 3
+    volumes:
+      - ./autocodr:/autocodr
 
 volumes:
   postgres:
