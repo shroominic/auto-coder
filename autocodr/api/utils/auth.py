@@ -3,7 +3,7 @@ from fastapi_jwt_auth import AuthJWT, exceptions  # type: ignore
 
 from autocodr.database.models import User
 
-from ..core import settings
+from autocodr.api.core import settings
 
 
 @AuthJWT.load_config  # type: ignore
