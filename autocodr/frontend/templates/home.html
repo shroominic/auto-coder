@@ -1,19 +1,29 @@
 {% extends "base.html" %}
 
-{% block title %}AutoCoder{% endblock %}
+{% block title %}AutoCodr{% endblock %}
 
 {% block content %}
 
 <section class="py-12">
   <div class="flex flex-col items-center">
-    <h1 class="text-6xl font-bold text-center mb-2">I solve your github issue in less than 15min</h1>
+    <h1 class="text-6xl font-bold text-center mb-2">
+      I solve your github issue in less than 15min
+    </h1>
+    <!--  Button: -->
+    <div class="flex justify-center pt-16">
+      <a href="{{ pay_issue_link }}" 
+        class="bg-blue-500 hover:bg-blue-700 text-white 
+        font-bold py-2 px-4 rounded-full">
+        👉 SOLVE MY ISSUE ( 💶x10 ) 👈
+      </a>
+    </div>
+
   </div>
 </section>
 
 <section class="py-8 w-2/3 items-center mx-auto">
   <div class="flex justify-between m-14">
     <div class="flex flex-col justify-left w-1/2">
-      <h2 class="text-3xl font-bold mb-2">Solve your issue 👈</h2>
     </div>
     <div>
       <img src="">
@@ -21,7 +31,7 @@
   </div>
   <div class="flex justify-between">
     <div>
-      <img src="">
+      (Price will increase over time when it gets better and more computing is needed)
     </div>
   </div>
   <div class="flex justify-between m-14">
