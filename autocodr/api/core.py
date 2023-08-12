@@ -1,16 +1,23 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-from autocodr.api.settings import Settings
+from autocodr.api.settings import settings
+
 
 app = FastAPI()
-settings = Settings()
 
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins TODO: change this in production
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+app.mount(
+    settings.STATIC_URL, 
+    StaticFiles(directory="autocodr/frontend/static"),
+    name="static"
 )
