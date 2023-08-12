@@ -14,7 +14,7 @@ from langchain.prompts.chat import (
 
 from autocodr.chain.templates import coding_system_prompt, default_system
 from autocodr.chain.parser import CodeBlockOutputParser, FilePathsOutputParser
-from autocodr.utils import raiser
+from autocodr.api.utils import raiser
 
 
 T = TypeVar("T")

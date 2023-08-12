@@ -2,7 +2,7 @@ from uuid import UUID
 from github import Issue, Repository, Github
 from sqlmodel import Field
 
-from autocodr import settings
+from autocodr.api.core import settings
 from .base import Base
 
 

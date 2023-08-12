@@ -5,7 +5,7 @@ from langchain.schema.output_parser import (
     OutputParserException
 )
 
-from autocodr.utils import raiser
+from autocodr.api.utils import raiser
 
 
 class CodeBlockOutputParser(BaseOutputParser[list[str]]):
