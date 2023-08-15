@@ -15,13 +15,10 @@ router = APIRouter()
 @router.post("/request-login")
 async def request_email_link(email: str, session: AsyncSession = Depends(get_session)):
     try:
-        user = await models.User.from_email(session, email)
-        # create token
-        # user.login_token = str(uuid.uuid4())
-        # user.token_expiration = datetime.now() + timedelta(minutes=15)
-        await user.update_login_token(session)
+        user = await models.User.get_or_create(session, email=email)
+        login_token = await user.update_login_token(session)
 
-        await send_login_email(user, user.login_token)
+        await send_login_email(user, login_token)
         return {"status": "ok", "message": f"Email sent to {email}."}
 
     except Exception as e:
