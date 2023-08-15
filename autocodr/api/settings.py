@@ -8,13 +8,13 @@ class Settings(BaseSettings):
 
     authjwt_secret_key: str = SECRET
     authjwt_token_location: set[str] = {"cookies"}
-    
+
     STATIC_URL: str = "/static"
-    
+
     PAY_LINK_ISSUE: str = "/pay"
 
     DATABASE_URL: str = "pgsql://postgres:postgres@localhost:5432/autocoder"
-    
+
     GITHUB_ACCESS_TOKEN: str = "insert-a-github-access-token-here"
 
 

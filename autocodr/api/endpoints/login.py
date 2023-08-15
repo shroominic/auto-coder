@@ -1,5 +1,4 @@
-import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi_jwt_auth import AuthJWT  # type: ignore

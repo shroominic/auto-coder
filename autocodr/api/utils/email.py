@@ -1,9 +1,10 @@
 from os import getenv
 
-from autocodr.database import models
 from dotenv import load_dotenv
 from sendgrid import SendGridAPIClient  # type: ignore
 from sendgrid.helpers.mail import Mail  # type: ignore
+
+from autocodr.database import models
 
 load_dotenv()
 email_client = SendGridAPIClient(getenv("SENDGRID_API_KEY"))

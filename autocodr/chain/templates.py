@@ -1,31 +1,27 @@
+from langchain.prompts import HumanMessagePromptTemplate, SystemMessagePromptTemplate
 from langchain.schema import SystemMessage
-from langchain.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate
-
 
 default_system = SystemMessage(
-    content=
-        "You are a coding assistant solving tasks for developers."
-        "Be advanced and precise in your responses."
+    content="You are a coding assistant solving tasks for developers." "Be advanced and precise in your responses."
 )
 
 
 coding_system_prompt = SystemMessagePromptTemplate.from_template(
-    template=
-        "You are a coding assistant solving tasks for developers."
-        "Tasks are represented as issues on GitHub repositories."
-        "Be verbose and precise in your responses.\n"
-        "The following is a conversation about solving issue {issue_title} #{issue_number} on {repo_name}.\n"
+    template="You are a coding assistant solving tasks for developers."
+    "Tasks are represented as issues on GitHub repositories."
+    "Be verbose and precise in your responses.\n"
+    "The following is a conversation about solving issue {issue_title} #{issue_number} on {repo_name}.\n"
 )
 
 important_files = HumanMessagePromptTemplate.from_template(
-    template=
-"""
+    template="""
 Which files are important to read for gaining understanding of the codebase?
 
 Codebase:
 {code_tree}
 
-For example in a python project you might want to look at the 'requirements.txt' file to understand which technologies are used in the project.\n
+For example in a python project you might want to look at the 'requirements.txt' file
+to understand which technologies are used in the project.\n
 Reply like this and make sure pathes are in 'single quotes' and not "double quotes":
 
 ```json
@@ -35,31 +31,29 @@ Reply like this and make sure pathes are in 'single quotes' and not "double quot
         "path/to/file2.js",
         // ... and so on
         // but choose wisely: max 4 files
-    ]  
+    ]
 }}
 ```
 """
 )
 
 repo_summary = HumanMessagePromptTemplate.from_template(
-    template=
-        "Summarize what this repository is about and what it does.\n"
-        "Repository name: {repo_name}\n"
-        "Repository description: {repo_description}\n"
-        "Repository keywords: {repo_keywords}\n"
-        "Repository codebase: \n{code_tree}\n"
-        "Relevant files: \n{relevant_files}\n\n"
-        "Describe the technologies used and the structure of the codebase. "
-        "Please be as detailed and precise as possible but keep it short.\n"
+    template="Summarize what this repository is about and what it does.\n"
+    "Repository name: {repo_name}\n"
+    "Repository description: {repo_description}\n"
+    "Repository keywords: {repo_keywords}\n"
+    "Repository codebase: \n{code_tree}\n"
+    "Relevant files: \n{relevant_files}\n\n"
+    "Describe the technologies used and the structure of the codebase. "
+    "Please be as detailed and precise as possible but keep it short.\n"
 )
 
 issue_summary = HumanMessagePromptTemplate.from_template(
-    template=
-        "Repository Summary: \n{repo_summary}\n"
-        "Issue title: {issue_title}\n"
-        "Issue description: {issue_description}\n"
-        "Describe step by step (abstract) how to implement the issue and what files are relevant. "
-        "Be precise and keep it short.\n"
+    template="Repository Summary: \n{repo_summary}\n"
+    "Issue title: {issue_title}\n"
+    "Issue description: {issue_description}\n"
+    "Describe step by step (abstract) how to implement the issue and what files are relevant. "
+    "Be precise and keep it short.\n"
 )
 
 

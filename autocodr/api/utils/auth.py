@@ -1,9 +1,8 @@
 from fastapi import Depends, HTTPException
 from fastapi_jwt_auth import AuthJWT, exceptions  # type: ignore
 
-from autocodr.database.models import User
-
 from autocodr.api.core import settings
+from autocodr.database.models import User
 
 
 @AuthJWT.load_config  # type: ignore

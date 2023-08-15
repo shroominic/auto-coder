@@ -1,23 +1,19 @@
 import re
+
+from autocodr.chain.shortcuts import get_code_response, get_file_paths, get_multiple_file_paths, get_response
+from autocodr.chain.templates import (
+    change_file,
+    coding_system_prompt,
+    important_files,
+    issue_summary,
+    new_file,
+    prepare_changes,
+    repo_summary,
+)
+
 # from autocodr.schemas import TaskResult
 from autocodr.database import models
 from autocodr.repobox import CodeBase
-from autocodr.chain.shortcuts import (
-    get_response,
-    get_code_response,
-    get_file_paths,
-    get_multiple_file_paths,
-)
-from autocodr.chain.templates import (
-    coding_system_prompt,
-    important_files,
-    repo_summary,
-    issue_summary,
-    prepare_changes,
-    change_file,
-    new_file,
-)
-    
 
 
 async def solve_issue(
@@ -47,29 +43,17 @@ async def solve_issue(
     relevant_files_dict: dict[str, str] = {}
 
     context["relevant_files"] = str(
-        relevant_files_dict.update(
-            [
-                (path, await codebase.show_file(path) or "")
-                for path in relevant_file_paths
-            ]
-        ) or relevant_files_dict
+        relevant_files_dict.update([(path, await codebase.show_file(path) or "") for path in relevant_file_paths])
+        or relevant_files_dict
     )
 
-    context["repo_summary"] = await get_response(
-        repo_summary,
-        system=coding_system_prompt,
-        **context
-    )
+    context["repo_summary"] = await get_response(repo_summary, system=coding_system_prompt, **context)
 
     async def get_files(retry=3):
         try:
-            context["issue_summary"] = await get_response(
-                issue_summary, system=coding_system_prompt, **context
-            )
+            context["issue_summary"] = await get_response(issue_summary, system=coding_system_prompt, **context)
 
-            file_modifications = await get_multiple_file_paths(
-                prepare_changes, **context
-            )
+            file_modifications = await get_multiple_file_paths(prepare_changes, **context)
 
             new_files = file_modifications["new_files"]
             files_to_change = file_modifications["change_files"]

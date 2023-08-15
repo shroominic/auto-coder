@@ -16,5 +16,6 @@ this includes:
 - writing instructions for itself
 - commenting the code to improve understanding
 - iterating over the codebase to write a summary into memory
-- using the 4096 tokens as stack to put information and not only use it to store previous messages
+- using the 4096 tokens as stack to put information and not only use
+  it to store previous messages
 """

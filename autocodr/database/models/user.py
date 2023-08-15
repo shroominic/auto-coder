@@ -5,7 +5,7 @@ from sqlmodel import Field
 from .base import Base
 
 
-class User(Base, table=True):
+class User(Base, table=True):  # type: ignore
     email: str = Field(nullable=False, unique=True)
     login_token: str | None = Field(nullable=True)
     token_expiration: datetime | None = Field(nullable=True)

@@ -4,7 +4,6 @@ from fastapi.staticfiles import StaticFiles
 
 from autocodr.api.settings import settings
 
-
 app = FastAPI()
 
 
@@ -16,8 +15,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount(
-    settings.STATIC_URL, 
-    StaticFiles(directory="autocodr/frontend/static"),
-    name="static"
-)
+app.mount(settings.STATIC_URL, StaticFiles(directory="autocodr/frontend/static"), name="static")

@@ -1,121 +1,107 @@
 from typing import TypeVar
+
 from langchain.chat_models import ChatOpenAI
-from langchain.prompts import (
-    ChatPromptTemplate,
-    HumanMessagePromptTemplate,
-)
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema.output_parser import StrOutputParser, BaseOutputParser, OutputParserException
-from langchain.schema import SystemMessage, BaseMessage
-from langchain.prompts.chat import (
-    HumanMessagePromptTemplate,
-    SystemMessagePromptTemplate
-)
+from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate
+from langchain.schema import BaseMessage, SystemMessage
+from langchain.schema.output_parser import BaseOutputParser, OutputParserException, StrOutputParser
 
-from autocodr.chain.templates import coding_system_prompt, default_system
-from autocodr.chain.parser import CodeBlockOutputParser, FilePathsOutputParser
 from autocodr.api.utils import raiser
-
+from autocodr.chain.parser import CodeBlockOutputParser, FilePathsOutputParser
+from autocodr.chain.templates import coding_system_prompt, default_system
 
 T = TypeVar("T")
+
 
 def _default_parser():
     return StrOutputParser()
 
 
 async def get_response(
-        instruction: HumanMessagePromptTemplate | str,
-        system: SystemMessage | SystemMessagePromptTemplate = default_system,
-        parser: BaseOutputParser[T] = _default_parser(),
-        context: list[BaseMessage] = [],
-        model: str = "gpt-4",
-        verbose: bool = False,
-        retry: int = 3,
-        /,
-        **input_kwargs
-    ) -> T:
+    instruction: HumanMessagePromptTemplate | str,
+    system: SystemMessage | SystemMessagePromptTemplate = default_system,
+    parser: BaseOutputParser[T] = _default_parser(),
+    context: list[BaseMessage] = [],
+    model: str = "gpt-4",
+    verbose: bool = False,
+    retry: int = 3,
+    /,
+    **input_kwargs,
+) -> T:
     """
     Get response from chatgpt for provided instructions.
     """
-    try: 
+    try:
         return await (
             ChatPromptTemplate.from_messages(
                 [
                     system,
-                ] + context + [
-                    HumanMessagePromptTemplate.from_template(
-                        template=instruction
-                    ) if isinstance(instruction, str) else instruction
                 ]
-            ) | ChatOpenAI(
-                model=model,
-                verbose=verbose, 
-                request_timeout=60*5
-            ) | parser
+                + context
+                + [
+                    HumanMessagePromptTemplate.from_template(template=instruction)
+                    if isinstance(instruction, str)
+                    else instruction
+                ]
+            )
+            | ChatOpenAI(model=model, verbose=verbose, request_timeout=60 * 5)
+            | parser
         ).ainvoke(input_kwargs)
-    
-    except OutputParserException as e: 
-        return await get_response(
-            instruction,
-            system=system,
-            parser=parser,
-            context=context,
-            model=model,
-            verbose=verbose,
-            retry=retry-1,
-            **input_kwargs
-        ) if retry > 0 else raiser(e)
+
+    except OutputParserException as e:
+        return (
+            await get_response(
+                instruction,
+                system=system,
+                parser=parser,
+                context=context,
+                model=model,
+                verbose=verbose,
+                retry=retry - 1,
+                **input_kwargs,
+            )
+            if retry > 0
+            else raiser(e)
+        )
 
 
 async def get_code_response(
-        from_instruction: HumanMessagePromptTemplate | str,
-        with_context: BaseMessage | None = None,
-        /,
-        **kwargs
-    ) -> str:
-    return (
+    from_instruction: HumanMessagePromptTemplate | str, with_context: BaseMessage | None = None, /, **kwargs
+) -> str:
+    return (  # type: ignore
         await get_response(
             from_instruction,
             coding_system_prompt,
             parser=CodeBlockOutputParser(),
             context=[with_context] if with_context else [],
-            **kwargs
+            **kwargs,
         )
     )[0]
 
 
 async def get_file_paths(
-        from_instruction: HumanMessagePromptTemplate | str,
-        list_name: str,
-        system_instruction=coding_system_prompt,
-        **kwargs
-    ) -> list[str]:
-    """ 
-    Get a list of file paths from the provided instruction 
+    from_instruction: HumanMessagePromptTemplate | str,
+    list_name: str,
+    system_instruction=coding_system_prompt,
+    **kwargs,
+) -> list[str]:
     """
-    return (
+    Get a list of file paths from the provided instruction
+    """
+    return (  # type: ignore
         await get_response(
-            from_instruction, 
-            system_instruction=system_instruction,
-            parser=FilePathsOutputParser(),
-            **kwargs
+            from_instruction, system_instruction=system_instruction, parser=FilePathsOutputParser(), **kwargs
         )
     )[list_name]
 
 
 async def get_multiple_file_paths(
-        from_instruction: HumanMessagePromptTemplate | str,
-        system_instruction=coding_system_prompt,
-        **kwargs
-    ) -> dict[str, list[str]]:
-    """ 
-    Get a list of file paths from the provided instruction 
+    from_instruction: HumanMessagePromptTemplate | str, system_instruction=coding_system_prompt, **kwargs
+) -> dict[str, list[str]]:
+    """
+    Get a list of file paths from the provided instruction
     """
     return await get_response(
-        from_instruction, 
-        system_instruction=system_instruction,
-        parser=FilePathsOutputParser(),
-        **kwargs
+        from_instruction, system_instruction=system_instruction, parser=FilePathsOutputParser(), **kwargs
     )
 
 
@@ -133,9 +119,9 @@ async def gpt_format(file):
 
 if __name__ == "__main__":
     import asyncio
+
     from dotenv import load_dotenv
+
     load_dotenv()
-    
-    print(asyncio.run(get_code_response(
-        "Write a function that computes pi without using any module."
-    )))
+
+    print(asyncio.run(get_code_response("Write a function that computes pi without using any module.")))
